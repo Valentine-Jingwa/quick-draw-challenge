@@ -85,7 +85,7 @@ const DrawCanvas: React.FC<DrawCanvasProps> = ({ prompt, onSubmit, canvasType, c
     };
 
     return (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center overflow-hidden">
             <canvas
                 ref={canvasRef}
                 width={canvasSize}
