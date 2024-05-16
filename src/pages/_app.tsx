@@ -1,29 +1,37 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { AppProps } from 'next/app';
 import '../app/globals.css';
 
 // Create a context for the theme
 const ThemeContext = createContext({
-    darkMode: true,
-    toggleDarkMode: () => {},
+  darkMode: true,
+  toggleDarkMode: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
 const MyApp = ({ Component, pageProps }: AppProps) => {
-    const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
 
-    const toggleDarkMode = () => {
-        setDarkMode((prevMode) => !prevMode);
-    };
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
-    return (
-        <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
-            <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
-                <Component {...pageProps} />
-            </div>
-        </ThemeContext.Provider>
-    );
+  const toggleDarkMode = () => {
+    setDarkMode((prevMode) => !prevMode);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+      <div className="min-h-screen">
+        <Component {...pageProps} />
+      </div>
+    </ThemeContext.Provider>
+  );
 };
 
 export default MyApp;

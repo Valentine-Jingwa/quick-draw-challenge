@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, MouseEvent, ChangeEvent } from 'react';
+import type { TouchEvent } from 'react';
 
 interface DrawCanvasProps {
     prompt: string;
@@ -29,8 +30,8 @@ const DrawCanvas: React.FC<DrawCanvasProps> = ({ prompt, onSubmit, canvasType, c
         }
     }, [prompt, canvasType]);
 
-    const startDrawing = ({ nativeEvent }: MouseEvent<HTMLCanvasElement>) => {
-        const { offsetX, offsetY } = nativeEvent;
+    const startDrawing = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+        const { offsetX, offsetY } = getEventCoordinates(event);
         const canvas = canvasRef.current;
         if (canvas) {
             const context = canvas.getContext('2d');
@@ -45,9 +46,9 @@ const DrawCanvas: React.FC<DrawCanvasProps> = ({ prompt, onSubmit, canvasType, c
         }
     };
 
-    const draw = ({ nativeEvent }: MouseEvent<HTMLCanvasElement>) => {
+    const draw = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
         if (!isDrawing) return;
-        const { offsetX, offsetY } = nativeEvent;
+        const { offsetX, offsetY } = getEventCoordinates(event);
         const canvas = canvasRef.current;
         if (canvas) {
             const context = canvas.getContext('2d');
@@ -69,6 +70,22 @@ const DrawCanvas: React.FC<DrawCanvasProps> = ({ prompt, onSubmit, canvasType, c
         }
     };
 
+    const getEventCoordinates = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+        if (event.nativeEvent instanceof TouchEvent) {
+            const touch = event.nativeEvent.touches[0];
+            const rect = (event.target as HTMLCanvasElement).getBoundingClientRect();
+            return {
+                offsetX: touch.clientX - rect.left,
+                offsetY: touch.clientY - rect.top,
+            };
+        } else {
+            return {
+                offsetX: (event.nativeEvent as unknown as MouseEvent),
+                offsetY: (event.nativeEvent as unknown as MouseEvent),
+            };
+        }
+    };
+
     const handleSubmit = () => {
         const canvas = canvasRef.current;
         if (canvas) {
@@ -82,10 +99,13 @@ const DrawCanvas: React.FC<DrawCanvasProps> = ({ prompt, onSubmit, canvasType, c
                 ref={canvasRef}
                 width={canvasSize}
                 height={canvasSize}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={endDrawing}
-                onMouseLeave={endDrawing}
+                onMouseDown={(event) => startDrawing(event as unknown as MouseEvent<HTMLCanvasElement>)}
+                onMouseMove={(event) => draw(event as unknown as MouseEvent<HTMLCanvasElement>)}
+                onMouseUp={(event) => endDrawing()}
+                onMouseLeave={(event) => endDrawing()}
+                onTouchStart={(event) => startDrawing(event as unknown as TouchEvent<HTMLCanvasElement>)}
+                onTouchMove={(event) => draw(event as unknown as TouchEvent<HTMLCanvasElement>)}
+                onTouchEnd={(event) => endDrawing()}
                 className="border border-black"
             />
             <div className="mt-4 flex items-center space-x-4">

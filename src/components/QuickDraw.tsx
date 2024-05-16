@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DrawCanvas from './DrawCanvas';
 import { saveDrawing } from './firebase';
 import Login from './Login';
 import axios from 'axios';
+import { useTheme } from '@/pages/_app';
 
 const canvasTypes = ['whiteboard', 'blackboard'];
 const canvasSizes = [300, 500, 700];
@@ -23,6 +24,7 @@ interface QuickDrawProps {
 }
 
 const QuickDraw: React.FC<QuickDrawProps> = ({ user, setUser }) => {
+    const { darkMode, toggleDarkMode } = useTheme();
     const [mode, setMode] = useState<GameMode | ''>('');
     const [prompt, setPrompt] = useState('');
     const [canvasType, setCanvasType] = useState(canvasTypes[0]);
@@ -31,10 +33,27 @@ const QuickDraw: React.FC<QuickDrawProps> = ({ user, setUser }) => {
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
     const [showLogin, setShowLogin] = useState(false);
+    const [musicUrl, setMusicUrl] = useState<string>('');
+
+    useEffect(() => {
+        const fetchMusic = async () => {
+            try {
+                const response = await axios.get(
+                    `https://freemusicarchive.org/api/get/tracks.json?api_key=YOUR_API_KEY&limit=1`
+                );
+                setMusicUrl(response.data.dataset[0]?.track_url);
+            } catch (error) {
+                console.error('Failed to fetch music', error);
+            }
+        };
+        fetchMusic();
+    }, []);
 
     const fetchPrompt = async () => {
-        const response = await axios.get('https://api.example.com/generate-prompt'); // Replace with a real API endpoint
-        return response.data.prompt;
+        const response = await axios.get(
+            'https://api.wordnik.com/v4/words.json/randomWord?api_key=YOUR_WORDNIK_API_KEY'
+        );
+        return response.data.word;
     };
 
     const startGame = async (selectedMode: GameMode) => {
@@ -54,17 +73,8 @@ const QuickDraw: React.FC<QuickDrawProps> = ({ user, setUser }) => {
     };
 
     const evaluateDrawing = (dataURL: string) => {
-        if (prompt === 'circle' && dataURL.includes('some_circle_data')) {
-            setScore(score + 10);
-        } else if (prompt === 'square' && dataURL.includes('some_square_data')) {
-            setScore(score + 10);
-        } else if (prompt === 'triangle' && dataURL.includes('some_triangle_data')) {
-            setScore(score + 10);
-        } else if (prompt === 'star' && dataURL.includes('some_star_data')) {
-            setScore(score + 10);
-        } else {
-            setScore(score - 5);
-        }
+        // Add actual evaluation logic here
+        setScore(score + 10);
         setDrawings([...drawings, dataURL]);
         setPrompt('');
         if (timeLeft === 0) {
@@ -79,7 +89,7 @@ const QuickDraw: React.FC<QuickDrawProps> = ({ user, setUser }) => {
     };
 
     return (
-        <div className="flex flex-col items-center h-screen bg-gray-900 text-white">
+        <div className={`flex flex-col items-center h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
             <h1 className="text-2xl font-bold mb-4">Quick Draw Challenge</h1>
             {!mode ? (
                 <div className="flex flex-col items-center">
@@ -115,9 +125,16 @@ const QuickDraw: React.FC<QuickDrawProps> = ({ user, setUser }) => {
                 </div>
             ) : (
                 <div className="flex flex-col items-center">
+                    <button onClick={() => setMode('')} className="self-start mb-2 p-2 bg-gray-500 text-white rounded">Back</button>
                     <h2 className="text-xl mb-2">Draw a {prompt}</h2>
                     <DrawCanvas prompt={prompt} onSubmit={evaluateDrawing} canvasType={canvasType} canvasSize={canvasSize} />
                     {mode !== 'creative' && <p className="mt-2">Time left: {timeLeft} seconds</p>}
+                    {musicUrl && (
+                        <audio controls className="mt-4">
+                            <source src={musicUrl} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                        </audio>
+                    )}
                 </div>
             )}
             <p className="mt-4 text-lg">Score: {score}</p>
